@@ -2,23 +2,34 @@
 set -euo pipefail
 
 ACCOUNT="905418181527"
-REGION="ap-southeast-1"
+REGION="eu-central-1"
 REGISTRY="${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com"
-SERVICES=("user-service" "task-service" "api-gateway" "frontend-service" "notification-service")
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Format: "ecr-repo-name:local-directory"
+SERVICES=(
+  "taskmanager-user-service:user-service"
+  "taskmanager-task-service:task-service"
+  "taskmanager-api-gateway:api-gateway"
+  "taskmanager-frontend-service:frontend-service"
+  "taskmanager-notification-service:notification-service"
+)
 
 echo "==> Authenticating Docker to ECR"
 aws ecr get-login-password --region "$REGION" \
   | docker login --username AWS --password-stdin "$REGISTRY"
 
-for svc in "${SERVICES[@]}"; do
-  echo "==> Building $svc (linux/amd64)"
+for entry in "${SERVICES[@]}"; do
+  ECR_REPO="${entry%%:*}"   # everything before the colon
+  LOCAL_DIR="${entry##*:}"  # everything after the colon
+
+  echo "==> Building ${ECR_REPO}:v1 from ./${LOCAL_DIR}"
   docker buildx build \
     --platform linux/amd64 \
     --push \
-    -t "$REGISTRY/$svc:v1" \
-    "${REPO_ROOT}/${svc}"
-  echo "==> Done: $svc"
+    -t "${REGISTRY}/${ECR_REPO}:v1" \
+    "${REPO_ROOT}/${LOCAL_DIR}"
+  echo "==> Done: ${ECR_REPO}"
 done
 
 echo "==> All images pushed to ECR"
