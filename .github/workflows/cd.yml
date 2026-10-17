@@ -112,7 +112,7 @@ jobs:
           SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           TAG="sha-${SHA}"
-          PREFIX="ghcr.io/proops2026-taskmanager"
+          PREFIX="ghcr.io/walterdmt88-taskmanager"
           kubectl set image deployment/task-service \
             task-service=${PREFIX}/task-service:${TAG} -n default
           kubectl set image deployment/user-service \
